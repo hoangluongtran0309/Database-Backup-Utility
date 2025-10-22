@@ -1,0 +1,42 @@
+{"properties": [
+  {
+    "name": "app.cloud.aws.access-key",
+    "type": "java.lang.String",
+    "description": "A description for 'app.cloud.aws.access-key'"
+  },
+  {
+    "name": "app.cloud.aws.secretKey",
+    "type": "java.lang.String",
+    "description": "A description for 'app.cloud.aws.secretKey'"
+  },
+  {
+    "name": "app.cloud.aws.bucketName",
+    "type": "java.lang.String",
+    "description": "A description for 'app.cloud.aws.bucketName'"
+  },
+  {
+    "name": "app.cloud.azure.connection-string",
+    "type": "java.lang.String",
+    "description": "A description for 'app.cloud.azure.connection-string'"
+  },
+  {
+    "name": "app.cloud.azure.containerName",
+    "type": "java.lang.String",
+    "description": "A description for 'app.cloud.azure.containerName'"
+  },
+  {
+    "name": "app.cloud.gcp.credentials-path",
+    "type": "java.lang.String",
+    "description": "A description for 'app.cloud.gcp.credentials-path'"
+  },
+  {
+    "name": "app.cloud.gcp.bucketName",
+    "type": "java.lang.String",
+    "description": "A description for 'app.cloud.gcp.bucketName'"
+  },
+  {
+    "name": "app.cloud.aws.region",
+    "type": "java.lang.String",
+    "description": "A description for 'app.cloud.aws.region'"
+  }
+]}

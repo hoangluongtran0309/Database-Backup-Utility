@@ -1,0 +1,58 @@
+# Conversion to YAML from Properties formar report
+# Warnings:
+# - The yaml file had comments which are lost in the refactoring!
+spring:
+  application:
+    name: Database Backup Utility
+    version: 0.0.1
+  shell:
+    interactive:
+      enabled: true
+  config:
+    import: optional:file:.env[.properties]
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+    driverClassName: com.mysql.cj.jdbc.Driver
+  # sql:
+  # init:
+  # mode: always
+  # schema-locations: classpath:quartz_tables.sql
+  quartz:
+    job-store-type: jdbc
+    jdbc:
+      initialize-schema: never
+    properties:
+      org:
+        quartz:
+          jobStore:
+            driverDelegateClass: org.quartz.impl.jdbcjobstore.StdJDBCDelegate
+            
+server:
+  port: 8080
+
+logging:
+  level:
+    root: off
+  file:
+    name: database_backup_utility.log
+
+app:
+  cloud:
+    aws:
+      accessKey: ${AWS_ACCESS_KEY}
+      secretKey: ${AWS_SECRET_KEY}
+      bucketName: ${AWS_BUCKET_NAME}
+      region: ${AWS_REGION}
+    azure:
+      connectionString: ${AZURE_CONNECTION_STRING}
+      containerName: ${AZURE_CONTAINER_NAME}
+    gcp:
+      credentialsPath: ${GCP_CREDENTIALS_PATH}
+      bucketName: ${GCP_BUCKET_NAME}
