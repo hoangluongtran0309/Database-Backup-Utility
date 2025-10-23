@@ -19,8 +19,6 @@ import dbu.services.backup.BackupService;
 import dbu.services.scheduler.BackupJobScheduler;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Null;
-import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 
 @ShellComponent
@@ -44,7 +42,7 @@ public class BackupCommand {
             @ShellOption(value = { "-c", "--compress" }, defaultValue = "NONE") CompressType compressType,
             @ShellOption(value = { "-o", "--output" }) String backupFilePath,
             @ShellOption(value = { "-C",
-                    "--cron" }) @Null @Pattern(regexp = "^(\\\\*|(\\\\d+,)+\\\\d+|(\\\\d+(\\\\/|-)\\\\d+)|\\\\d+|L|W|\\\\?|[A-Z]{3}(-[A-Z]{3})?)(\\\\s+(\\\\*|(\\\\d+,)+\\\\d+|(\\\\d+(\\\\/|-)\\\\d+)|\\\\d+|L|W|\\\\?|[A-Z]{3}(-[A-Z]{3})?)){4}$") String cronSchedule) {
+                    "--cron" }, defaultValue="") String cronSchedule) {
 
         logger.info("Received backup command for database '{}' of type '{}'", databaseName, databaseType);
 
@@ -85,7 +83,7 @@ public class BackupCommand {
                 System.err.println(warnMsg);
             }
 
-            if (cronSchedule != null) {
+            if (!cronSchedule.isBlank() || !cronSchedule.equals("")) {
                 config.setCronSchedule(cronSchedule);
                 try {
                     logger.info("Scheduling backup job with cron expression: {}", cronSchedule);
