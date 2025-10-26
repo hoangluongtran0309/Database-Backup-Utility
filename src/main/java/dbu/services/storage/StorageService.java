@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import dbu.exceptions.StorageExecutionException;
+import dbu.models.StorageFileInfo;
 
 public interface StorageService {
 
@@ -15,5 +16,5 @@ public interface StorageService {
 
     boolean exists(String key);
 
-    List<String> listFiles();
+    List<StorageFileInfo> listFiles();
 }
