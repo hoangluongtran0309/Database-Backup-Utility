@@ -1,6 +1,8 @@
 package dbu.services.storage;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -10,7 +12,10 @@ import org.springframework.stereotype.Service;
 
 import dbu.config.AppProperties;
 import dbu.exceptions.StorageExecutionException;
+import dbu.models.StorageFileInfo;
 import lombok.RequiredArgsConstructor;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
@@ -21,7 +26,6 @@ import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
-import software.amazon.awssdk.services.s3.model.S3Object;
 
 @Service("awsStorage")
 @RequiredArgsConstructor
@@ -35,7 +39,8 @@ public class AWSStorage implements StorageService {
     @Override
     public String uploadFile(String key, Path filePath) {
         try {
-            logger.info("Uploading file '{}' to bucket '{}' with key '{}'", filePath, props.getCloud().getAws().getBucketName(), key);
+            logger.info("Uploading file '{}' to bucket '{}' with key '{}'", filePath,
+                    props.getCloud().getAws().getBucketName(), key);
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(props.getCloud().getAws().getBucketName())
                     .key(key)
@@ -50,24 +55,39 @@ public class AWSStorage implements StorageService {
             return url;
         } catch (S3Exception e) {
             logger.error("AWS S3 upload error for key '{}': {}", key, e.awsErrorDetails().errorMessage(), e);
-            throw new StorageExecutionException("Failed to upload file to AWS S3: " + e.awsErrorDetails().errorMessage(), e);
+            throw new StorageExecutionException(
+                    "Failed to upload file to AWS S3: " + e.awsErrorDetails().errorMessage(), e);
         }
     }
 
     @Override
     public Path downloadFile(String key, Path destination) {
         try {
-            logger.info("Downloading file with key '{}' from bucket '{}' to '{}'", key, props.getCloud().getAws().getBucketName(), destination);
+            Path resolvedPath = destination;
+
+            if (Files.isDirectory(destination)) {
+                resolvedPath = destination.resolve(Path.of(key).getFileName());
+            }
+
+            logger.info("Downloading file with key '{}' from bucket '{}' to '{}'",
+                    key, props.getCloud().getAws().getBucketName(), resolvedPath);
+
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                     .bucket(props.getCloud().getAws().getBucketName())
                     .key(key)
                     .build();
-            s3Client.getObject(getObjectRequest, destination);
-            logger.info("Download successful to '{}'", destination);
-            return destination.toAbsolutePath();
+
+            s3Client.getObject(getObjectRequest, resolvedPath);
+            logger.info("Download successful to '{}'", resolvedPath);
+
+            return resolvedPath.toAbsolutePath();
         } catch (S3Exception e) {
             logger.error("AWS S3 download error for key '{}': {}", key, e.awsErrorDetails().errorMessage(), e);
-            throw new StorageExecutionException("Failed to download file from AWS S3: " + e.awsErrorDetails().errorMessage(), e);
+            throw new StorageExecutionException(
+                    "Failed to download file from AWS S3: " + e.awsErrorDetails().errorMessage(), e);
+        } catch (AwsServiceException | SdkClientException e) {
+            logger.error("Unexpected error during download: {}", e.getMessage(), e);
+            throw new StorageExecutionException("Unexpected download error: " + e.getMessage(), e);
         }
     }
 
@@ -84,7 +104,8 @@ public class AWSStorage implements StorageService {
             return true;
         } catch (S3Exception e) {
             logger.error("AWS S3 delete error for key '{}': {}", key, e.awsErrorDetails().errorMessage(), e);
-            throw new StorageExecutionException("Failed to delete file from AWS S3: " + e.awsErrorDetails().errorMessage(), e);
+            throw new StorageExecutionException(
+                    "Failed to delete file from AWS S3: " + e.awsErrorDetails().errorMessage(), e);
         }
     }
 
@@ -107,14 +128,16 @@ public class AWSStorage implements StorageService {
     }
 
     @Override
-    public List<String> listFiles() {
+    public List<StorageFileInfo> listFiles() {
         try {
             return s3Client.listObjectsV2(ListObjectsV2Request.builder()
                     .bucket(props.getCloud().getAws().getBucketName())
                     .build())
                     .contents()
                     .stream()
-                    .map(S3Object::key)
+                    .map(obj -> new StorageFileInfo(obj.key(), obj.size(), obj.lastModified() != null
+                            ? obj.lastModified().atZone(ZoneId.systemDefault()).toLocalDateTime()
+                            : null))
                     .collect(Collectors.toList());
         } catch (S3Exception e) {
             logger.error("AWS S3 error listing files: {}", e.awsErrorDetails().errorMessage(), e);

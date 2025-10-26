@@ -2,6 +2,8 @@ package dbu.commands;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -12,6 +14,7 @@ import org.springframework.shell.standard.ShellOption;
 
 import dbu.enums.StorageType;
 import dbu.exceptions.StorageExecutionException;
+import dbu.models.StorageFileInfo;
 import dbu.services.storage.StorageService;
 import lombok.RequiredArgsConstructor;
 
@@ -108,22 +111,37 @@ public class StorageCommand {
         }
     }
 
-    @ShellMethod(key = { "list" }, value = "List all files in cloud storage")
+   @ShellMethod(key = { "list" }, value = "List all files in cloud storage")
     public void listFiles(
-            @ShellOption(value = { "-s",
-                    "--storage-type" }, help = "Storage type (AWS, AZURE, GCP)") StorageType storageType) {
+            @ShellOption(value = { "-s", "--storage-type" }, help = "Storage type (AWS, AZURE, GCP)")
+            StorageType storageType) {
 
         try {
             logger.info("Listing files in storage '{}'", storageType);
 
-            var files = resolverExecutor(storageType).listFiles();
+            List<StorageFileInfo> files = resolverExecutor(storageType).listFiles();
 
             if (files.isEmpty()) {
                 System.out.println("No files found in storage.");
-            } else {
-                System.out.println("Files in storage:");
-                files.forEach(System.out::println);
+                return;
             }
+
+            // Tiêu đề bảng
+            System.out.printf("%-40s %-12s %-20s%n", "File Name", "Size", "Last Modified");
+            System.out.println("──────────────────────────────────────────────────────────────────────────────");
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+            // Nội dung bảng
+            files.forEach(file -> System.out.printf(
+                    "%-40s %-12s %-20s%n",
+                    file.getName(),
+                    readableSize(file.getSize()),
+                    file.getLastModified() != null ? file.getLastModified().format(formatter) : "N/A"
+            ));
+
+            System.out.println("──────────────────────────────────────────────────────────────────────────────");
+            System.out.printf("Total: %d file(s)%n", files.size());
 
         } catch (StorageExecutionException e) {
             logger.error("Failed to list files in storage '{}': {}", storageType, e.getMessage(), e);
@@ -131,8 +149,16 @@ public class StorageCommand {
         }
     }
 
+    private String readableSize(long size) {
+        if (size < 1024) return size + " B";
+        int exp = (int) (Math.log(size) / Math.log(1024));
+        char pre = "KMGTPE".charAt(exp - 1);
+        return String.format("%.1f %sB", size / Math.pow(1024, exp), pre);
+    }
+    
+
     @ShellMethod(key = { "check" }, value = "Check if a file exists in cloud storage")
-    public boolean check(
+    public void check(
             @ShellOption(value = { "-s",
                     "--storage-type" }, help = "Storage type (AWS, AZURE, GCP)") StorageType storageType,
             @ShellOption(value = { "-k", "--key" }) String key) {
@@ -141,10 +167,8 @@ public class StorageCommand {
             logger.info("Checking existence of file with key '{}' in storage '{}'", key, storageType);
             boolean result = resolverExecutor(storageType).exists(key);
             System.out.println("File exists: " + result);
-            return result;
         } catch (IllegalArgumentException e) {
             System.err.println(e.getMessage());
-            return false;
         }
     }
 }

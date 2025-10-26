@@ -5,6 +5,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -23,6 +25,7 @@ import com.google.cloud.storage.StorageException;
 
 import dbu.config.AppProperties;
 import dbu.exceptions.StorageExecutionException;
+import dbu.models.StorageFileInfo;
 import lombok.RequiredArgsConstructor;
 
 @Service("gcpStorage")
@@ -66,17 +69,22 @@ public class GCPStorage implements StorageService {
     @Override
     public Path downloadFile(String key, Path destination) {
         try {
-            logger.info("Downloading blob with key '{}' from GCP bucket '{}' to '{}'", key,
-                    props.getCloud().getGcp().getBucketName(), destination);
+            Path resolvedPath = destination;
+            if (Files.isDirectory(destination)) {
+                resolvedPath = destination.resolve(Path.of(key).getFileName());
+            }
+
+            logger.info("Downloading blob with key '{}' from GCP bucket '{}' to '{}'",
+                    key, props.getCloud().getGcp().getBucketName(), resolvedPath);
 
             Blob blob = storage.get(props.getCloud().getGcp().getBucketName(), key);
             if (blob == null || !blob.exists()) {
                 throw new StorageExecutionException("Blob with key '" + key + "' does not exist");
             }
 
-            blob.downloadTo(destination);
-            logger.info("Download successful to '{}'", destination);
-            return destination.toAbsolutePath();
+            blob.downloadTo(resolvedPath);
+            logger.info("Download successful to '{}'", resolvedPath);
+            return resolvedPath.toAbsolutePath();
         } catch (StorageException e) {
             logger.error("GCP Storage error during download: {}", e.getMessage(), e);
             throw new StorageExecutionException("GCP download failed: " + e.getMessage(), e);
@@ -114,14 +122,21 @@ public class GCPStorage implements StorageService {
     }
 
     @Override
-    public List<String> listFiles() {
+    public List<StorageFileInfo> listFiles() {
         try {
             return StreamSupport.stream(
                     storage.list(props.getCloud().getGcp().getBucketName())
                             .iterateAll()
                             .spliterator(),
                     false)
-                    .map(Blob::getName)
+                    .map(obj -> new StorageFileInfo(
+                            obj.getName(),
+                            obj.getSize() != null ? obj.getSize().intValue() : 0L,
+                            obj.getUpdateTimeOffsetDateTime() != null
+                                    ? Instant.ofEpochMilli(obj.getUpdateTimeOffsetDateTime().toEpochSecond())
+                                            .atZone(ZoneId.systemDefault())
+                                            .toLocalDateTime()
+                                    : null))
                     .collect(Collectors.toList());
         } catch (StorageException e) {
             logger.error("GCP Storage error during list files: {}", e.getMessage(), e);

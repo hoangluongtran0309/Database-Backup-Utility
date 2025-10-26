@@ -1,5 +1,6 @@
 package dbu.services.storage;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -11,10 +12,10 @@ import org.springframework.stereotype.Service;
 
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobStorageException;
 
 import dbu.exceptions.StorageExecutionException;
+import dbu.models.StorageFileInfo;
 import lombok.RequiredArgsConstructor;
 
 @Service("azureStorage")
@@ -38,7 +39,8 @@ public class AzureStorage implements StorageService {
             logger.info("Upload successful. Blob URL: {}", url);
             return url;
         } catch (BlobStorageException e) {
-            logger.error("Failed to upload file '{}' to Azure Blob with key '{}': {}", filePath, key, e.getMessage(), e);
+            logger.error("Failed to upload file '{}' to Azure Blob with key '{}': {}", filePath, key, e.getMessage(),
+                    e);
             throw new StorageExecutionException("Azure upload failed: " + e.getMessage(), e);
         }
     }
@@ -46,12 +48,18 @@ public class AzureStorage implements StorageService {
     @Override
     public Path downloadFile(String key, Path destination) {
         try {
-            logger.info("Downloading blob with key '{}' to file '{}'", key, destination);
-            containerClient.getBlobClient(key)
-                    .downloadToFile(destination.toString(), true);
+            Path resolvedPath = destination;
+            if (Files.isDirectory(destination)) {
+                resolvedPath = destination.resolve(Path.of(key).getFileName());
+            }
 
-            logger.info("Download successful to '{}'", destination);
-            return destination.toAbsolutePath();
+            logger.info("Downloading blob with key '{}' to file '{}'", key, resolvedPath);
+
+            containerClient.getBlobClient(key)
+                    .downloadToFile(resolvedPath.toString(), true);
+
+            logger.info("Download successful to '{}'", resolvedPath);
+            return resolvedPath.toAbsolutePath();
         } catch (BlobStorageException e) {
             logger.error("Failed to download blob with key '{}' to '{}': {}", key, destination, e.getMessage(), e);
             throw new StorageExecutionException("Azure download failed: " + e.getMessage(), e);
@@ -73,14 +81,24 @@ public class AzureStorage implements StorageService {
     }
 
     @Override
-    public List<String> listFiles() {
+    public List<StorageFileInfo> listFiles() {
         try {
             return StreamSupport.stream(containerClient.listBlobs().spliterator(), false)
-                    .map(BlobItem::getName)
+                    .map(obj -> new StorageFileInfo(
+                            obj.getName(),
+                            obj.getProperties() != null && obj.getProperties().getContentLength() != null
+                                    ? obj.getProperties().getContentLength().intValue()
+                                    : 0L,
+                            obj.getProperties() != null && obj.getProperties().getLastModified() != null
+                                    ? obj.getProperties().getLastModified()
+                                            .toInstant()
+                                            .atZone(java.time.ZoneId.systemDefault())
+                                            .toLocalDateTime()
+                                    : null))
                     .collect(Collectors.toList());
         } catch (BlobStorageException e) {
             logger.error("Failed to list blobs: {}", e.getMessage(), e);
-            return List.of(); 
+            return List.of();
         }
     }
 
