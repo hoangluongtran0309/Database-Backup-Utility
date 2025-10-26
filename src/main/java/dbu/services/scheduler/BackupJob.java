@@ -16,62 +16,6 @@ import dbu.models.BackupConfig;
 import dbu.services.backup.BackupService;
 import lombok.RequiredArgsConstructor;
 
-// @Component
-// @RequiredArgsConstructor
-// public class BackupJob implements Job {
-
-//     private final Map<String, BackupService> backupExecutors;
-
-//     // @Autowired
-//     // private MySQLBackup mySQLBackup;
-
-//     // @Autowired
-//     // private PostgreSQLBackup postgreSQLBackup;
-
-//     // @Autowired
-//     // private MongoDBBackup mongoDBBackup;
-
-//     @Override
-//     public void execute(JobExecutionContext context) throws JobExecutionException {
-//         JobDataMap dataMap = context.getMergedJobDataMap();
-//         BackupConfig backupConfig = (BackupConfig) dataMap.get("backupConfig");
-//         resolverExecutor(backupConfig.getConnectionParams().getDatabaseType()).backup(backupConfig);
-//         // switch (backupConfig.getConnectionParams().getDatabaseType()) {
-//         //     case MYSQL -> {
-//         //         try {
-//         //             mySQLBackup.backup(backupConfig);
-//         //         } catch (Exception e) {
-//         //             e.printStackTrace();
-//         //         }
-//         //     }
-//         //     case POSTGRESQL -> {
-//         //         try {
-//         //             postgreSQLBackup.backup(backupConfig);
-//         //         } catch (Exception e) {
-//         //             e.printStackTrace();
-//         //         }
-//         //     }
-//         //     case MONGODB -> {
-//         //         try {
-//         //             mongoDBBackup.backup(backupConfig);
-//         //         } catch (Exception e) {
-//         //             e.printStackTrace();
-//         //         }
-//         //     }
-//         //     default -> throw new JobExecutionException(
-//         //             "Unsupported database type: " + backupConfig.getConnectionParams().getDatabaseType());
-//         // }
-//     }
-
-//     private BackupService resolverExecutor(DatabaseType databaseType){
-//         String keyService = databaseType.name().toLowerCase() + "Backup";
-//         BackupService executor = backupExecutors.get(keyService);
-//         if(executor == null){
-//             throw new IllegalArgumentException("No backup service found for database type: " + databaseType);
-//         }
-//         return executor;
-//     }
-// }
 @Component
 @RequiredArgsConstructor
 public class BackupJob implements Job {
@@ -92,13 +36,15 @@ public class BackupJob implements Job {
 
         try {
             BackupService backupService = resolverExecutor(dbType);
-            logger.debug("Resolved backup service: {} for database type: {}", backupService.getClass().getSimpleName(), dbType);
+            logger.debug("Resolved backup service: {} for database type: {}", backupService.getClass().getSimpleName(),
+                    dbType);
 
             backupService.backup(backupConfig);
 
             logger.info("Backup job completed successfully for database: {} ({})", dbName, dbType);
         } catch (BackupExecutionException e) {
-            logger.error("Error occurred while executing backup job for database: {} ({}). Message: {}", dbName, dbType, e.getMessage(), e);
+            logger.error("Error occurred while executing backup job for database: {} ({}). Message: {}", dbName, dbType,
+                    e.getMessage(), e);
             throw new JobExecutionException("Backup job failed for database: " + dbName, e);
         }
     }

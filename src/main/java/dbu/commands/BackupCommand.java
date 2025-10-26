@@ -41,8 +41,7 @@ public class BackupCommand {
             @ShellOption(value = { "-w", "--password" }) String password,
             @ShellOption(value = { "-c", "--compress" }, defaultValue = "NONE") CompressType compressType,
             @ShellOption(value = { "-o", "--output" }) String backupFilePath,
-            @ShellOption(value = { "-C",
-                    "--cron" }, defaultValue="") String cronSchedule) {
+            @ShellOption(value = { "-C", "--cron" }, defaultValue = "") String cronSchedule) {
 
         logger.info("Received backup command for database '{}' of type '{}'", databaseName, databaseType);
 
@@ -70,7 +69,27 @@ public class BackupCommand {
         }
 
         try {
-            logger.info("Starting backup execution for database '{}'", databaseName);
+
+            if (!cronSchedule.isBlank()) {
+                config.setCronSchedule(cronSchedule);
+                try {
+                    logger.info("Scheduling backup job with cron expression: {}", cronSchedule);
+                    backupJobScheduler.scheduleJob(config);
+                    String schedMsg = String.format(
+                            "Backup schedule created successfully.\nThe database '%s' will be backed up according to the cron schedule: %s\nBackup file will be saved to: %s",
+                            databaseName, cronSchedule, backupFilePath);
+                    logger.info(schedMsg);
+                    System.out.println(schedMsg);
+                } catch (SchedulerException e) {
+                    String errMsg = "Failed to schedule backup job: " + e.getMessage();
+                    logger.error(errMsg, e);
+                    System.err.println(errMsg);
+                }
+
+                return;
+            }
+
+            logger.info("Starting immediate backup for database '{}'", databaseName);
             Path resultPath = executor.backup(config);
 
             if (resultPath != null) {
@@ -81,22 +100,6 @@ public class BackupCommand {
                 String warnMsg = "Backup service executed but returned null path.";
                 logger.warn(warnMsg);
                 System.err.println(warnMsg);
-            }
-
-            if (!cronSchedule.isBlank() || !cronSchedule.equals("")) {
-                config.setCronSchedule(cronSchedule);
-                try {
-                    logger.info("Scheduling backup job with cron expression: {}", cronSchedule);
-                    backupJobScheduler.scheduleBackupJob(config);
-                    String schedMsg = "Backup schedule created successfully. The database will be backed up according to the cron schedule: "
-                            + cronSchedule;
-                    logger.info(schedMsg);
-                    System.out.println(schedMsg);
-                } catch (SchedulerException e) {
-                    String errMsg = "Failed to schedule backup job: " + e.getMessage();
-                    logger.error(errMsg, e);
-                    System.err.println(errMsg);
-                }
             }
 
         } catch (BackupExecutionException e) {
