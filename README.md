@@ -86,14 +86,15 @@ database-backup-utility/
 
 ### 2️⃣ Installation
 
-#### Clone and build the project:
+Clone and build the project:
 
 ```bash
 git clone https://github.com/yourusername/database-backup-utility.git
 cd database-backup-utility
 mvn clean package
 ```
-#### Config the project:
+
+### 3️⃣ Configuration
 
 You can select either of the two options:
 
@@ -148,7 +149,7 @@ export GCP_CREDENTIALS_PATH=your-credentials-path #e.g. /home/user/gcp-credentia
 export GCP_BUCKET_NAME=your-gcp-bucket-name
 ```
 
-#### Run the CLI:
+### 4️⃣ Run the CLI
 
 ```bash
 java -jar target/database-backup-utility.jar
@@ -161,7 +162,7 @@ java -jar target/database-backup-utility.jar
 When the app starts, you’ll see a prompt like this:
 
 ```
-shell:>_
+dbu:>_
 ```
 
 Type `help` to view all available commands.
@@ -170,7 +171,7 @@ Type `help` to view all available commands.
 
 ## 🧭 Usage Guide
 
-### ⚙️ 1. Connect to a Database
+### 🔌 1. Connect to a Database
 
 ```bash
 connect --database-type <TYPE> --host <HOST> --port <PORT> --database <DB_NAME> --user <USER> --password <PASSWORD>
@@ -178,7 +179,7 @@ connect --database-type <TYPE> --host <HOST> --port <PORT> --database <DB_NAME> 
 
 **Example:**
 ```bash
-shell:> connect --database-type MYSQL --host localhost --port 3306 --database sales --user root --password pass123
+dbu:> connect --database-type MYSQL --host localhost --port 3306 --database sales --user root --password pass123
 ```
 ✅ Output:
 ```
@@ -193,18 +194,18 @@ Successfully connected to database: sales [MYSQL]
 backup --database-type <TYPE> --host <HOST> --port <PORT> --database <DB_NAME> --user <USER> --password <PASSWORD> --output <OUTPUT_PATH> --compress <TYPE> --cron <CRON_EXPRESSION>
 ```
 
-**Example 1: Immediate Backup**
+**Example 1: ⚡ Immediate Backup**
 ```bash
-shell:> backup --database-type POSTGRESQL --database mydb --user admin --password pass123 --output ./backups --compress GZIP
+dbu:> backup --database-type POSTGRESQL --database mydb --user admin --password pass123 --output ./backups --compress GZIP
 ```
 ✅ Output:
 ```
 Database backup completed successfully: ./backups/backup_mydb_2025-10-23.gzip
 ```
 
-**Example 2: Scheduled Backup**
+**Example 2: ⏰ Scheduled Backup**
 ```bash
-shell:> backup --database-type MYSQL --database sales --user root --password 12345 --output ./backups --compress ZIP --cron "0 0 3 * * ?"
+dbu:> backup --database-type MYSQL --database sales --user root --password 12345 --output ./backups --compress ZIP --cron "0 0 3 * * ?"
 ```
 ✅ Output:
 ```
@@ -221,7 +222,7 @@ restore --database-type <TYPE> --database <DB_NAME> --user <USER> --password <PA
 
 **Example:**
 ```bash
-shell:> restore --database-type POSTGRESQL --database mydb --user admin --password pass123 --input-path ./backups/backup_mydb_2025-10-22.zip
+dbu:> restore --database-type POSTGRESQL --database mydb --user admin --password pass123 --input-path ./backups/backup_mydb_2025-10-22.zip
 ```
 ✅ Output:
 ```
@@ -232,63 +233,66 @@ Database restore successful.
 
 ### ☁️ 4. Cloud Storage Commands
 
-**Upload a Backup File**
+**⬆️ Upload a Backup File**
 ```bash
 upload --storage-type <TYPE> --key <REMOTE_PATH> --file-path <LOCAL_FILE>
 ```
 
 **Example:**
 ```bash
-shell:> upload --storage-type AWS --key backups/mydb_2025-10-23.gzip --file-path ./backups/backup_mydb_2025-10-23.gzip
+dbu:> upload --storage-type AWS --key backups/mydb_2025-10-23.gzip --file-path ./backups/backup_mydb_2025-10-23.gzip
 ```
 ✅ Output:
 ```
 Upload successful! URL: https://s3.amazonaws.com/mybucket/backups/mydb_2025-10-23.gzip
 ```
 
-**Download a File**
+**⬇️ Download a File**
 ```bash
 download --storage-type <TYPE> --key <REMOTE_PATH> --destination <LOCAL_DIR>
 ```
 
 **Example:**
 ```bash
-shell:> download --storage-type GCP --key backups/sales_2025-10-20.zip --destination ./downloads
+dbu:> download --storage-type GCP --key backups/sales_2025-10-20.zip --destination ./downloads
 ```
 ✅ Output:
 ```
 Download successful! Saved to: ./downloads/sales_2025-10-20.zip
 ```
 
-**Delete a File**
+**🗑️ Delete a File**
 ```bash
 delete --storage-type <TYPE> --key <REMOTE_PATH>
 ```
 
 **Example:**
 ```bash
-shell:> delete --storage-type GCP --key backups/sales_2025-10-20.zip 
+dbu:> delete --storage-type GCP --key backups/sales_2025-10-20.zip 
 ```
 ✅ Output:
 ```
 File deleted successfully.
 ```
 
-**List All Files**
+**📜 List All Files**
 ```bash
 list --storage-type <TYPE>
 ```
 
 **Example:**
 ```bash
-shell:> list --storage-type GCP 
+dbu:> list --storage-type GCP 
 ```
 ✅ Output:
 ```
-Files in storage:
-backups/sales_2025-10-20.zip
-backups/sales_2025-10-22.zip
-backups/sales_2025-10-24.zip
+File Name                                Size           Last Modified       
+──────────────────────────────────────────────────────────────────────────────
+backups/sales_2025-10-20.zip             15 MB          2025-10-20 16:17:04 
+backups/sales_2025-10-22.zip             40 MB          2025-10-22 16:26:36 
+backups/sales_2025-10-24.zip             60 MB          2025-10-24 16:26:36 
+──────────────────────────────────────────────────────────────────────────────
+Total: 3 file(s)
 ```
 
 **Check if a File Exists**
@@ -298,7 +302,7 @@ check --storage-type <TYPE> --key <REMOTE_PATH>
 
 **Example:**
 ```bash
-shell:> check --storage-type AWS --key backups/mydb_2025-10-23.gzip
+dbu:> check --storage-type AWS --key backups/mydb_2025-10-23.gzip
 ```
 ✅ Output:
 ```
@@ -311,16 +315,16 @@ File exists: true
 
 ```bash
 # 1. Connect
-shell:> connect --database-type POSTGRESQL --database mydb --user admin --password 1234
+dbu:> connect --database-type POSTGRESQL --database mydb --user admin --password 1234
 
 # 2. Backup & Compress
-shell:> backup --database-type POSTGRESQL --database mydb --user admin --password 1234 --output ./backups --compress ZIP
+dbu:> backup --database-type POSTGRESQL --database mydb --user admin --password 1234 --output ./backups --compress ZIP
 
 # 3. Upload to S3
-shell:> upload --storage-type AWS --key backups/mydb_latest.zip --file-path ./backups/backup_mydb_latest.zip
+dbu:> upload --storage-type AWS --key backups/mydb_latest.zip --file-path ./backups/backup_mydb_latest.zip
 
 # 4. Schedule daily backups at 2 AM
-shell:> backup --database-type POSTGRESQL --database mydb --user admin --password 1234 --output ./backups --cron "0 0 2 * * ?"
+dbu:> backup --database-type POSTGRESQL --database mydb --user admin --password 1234 --output ./backups --cron "0 0 2 * * ?"
 ```
 
 ---
@@ -332,17 +336,126 @@ shell:> backup --database-type POSTGRESQL --database mydb --user admin --passwor
 | **NONE** | (no compression) | Raw dump file |
 | **ZIP** | `.zip` | Standard compression |
 | **GZIP** | `.gzip` | Fast single-file compression |
-| **TAR.GZ** | `.tar.gz` | Common on Linux/Unix |
+| **TARGZ** | `.tar.gz` | Common on Linux/Unix |
 
 ---
 
-## 🧱 Scheduling with Quartz
+## ⏰ Scheduling with Quartz 
 
 Automate periodic backups using cron expressions.  
 Example:
 ```bash
-shell:> backup --database-type POSTGRESQL --database mydb --user admin --password pass123 --output ./backups --cron "0 0 3 * * ?"
+dbu:> backup --database-type POSTGRESQL --database mydb --user admin --password pass123 --output ./backups --cron "0 0 3 * * ?"
 ```
-✅ Backup schedule created successfully. The database will be backed up according to the cron schedule: **0 0 3 * * ?**.
+
+✅ Output:
+```
+Backup schedule created successfully. The database will be backed up according to the cron schedule: *0 0 3 * * ?*.
+```
 
 ---
+
+## 🗓️ Managing Backup Schedulers
+
+After creating backup schedules, you can manage and monitor them directly using the available shell commands provided by `SchedulerCommand`.
+
+### 🔍 View all schedulers
+List all existing backup jobs along with their current state, next, and previous execution times.
+
+```bash
+dbu:> list-schedulers
+```
+
+✅ Output:
+```
+LIST OF BACKUP JOBS:
+================================================================================
+JOB NAME                       GROUP        STATE        NEXT FIRE               PREVIOUS FIRE
+--------------------------------------------------------------------------------
+dailyBackup                    MYSQL        NORMAL       2025-10-28T03:00:00     2025-10-27T03:00:00
+================================================================================
+```
+
+**📝 Note - Quartz Job States & Groups:**
+
+**Job States**
+
+In Quartz Scheduler, each **Trigger** (and its associated Job) can have one of the following states
+
+- 🟢 NORMAL → Scheduled jobs are running as planned.
+- 🟡 PAUSED → Temporarily stopped; can resume later.
+- 🔵 COMPLETE → Finished; may need to reschedule for future runs.
+- 🔴 ERROR → Check logs to diagnose the failure.
+- 🟣 BLOCKED → Job is currently running; concurrent execution is not allowed.
+
+**Job Groups**
+
+Backup jobs are organized into **Groups** according to the type of database:
+
+| Group Name   | Database Type | Description                               |
+|-------------|---------------|-------------------------------------------|
+| `POSTGRESQL` | PostgreSQL    | Jobs that back up PostgreSQL databases    |
+| `MYSQL`      | MySQL         | Jobs that back up MySQL databases         |
+| `MONGODB`    | MongoDB       | Jobs that back up MongoDB databases       |
+
+**💡 Tip:**  
+- Use **Group names** to filter jobs when pausing, resuming, or deleting specific database backups.  
+- Pay attention to **Job States** to understand whether a job is active, paused, completed, or encountering errors.
+
+### ⏸️ Pause a specific scheduler
+Temporarily pause a scheduled backup job.
+```bash
+dbu:> pause-scheduler -j dailyBackup -g BACKUP
+```
+
+✅ Output:
+```
+Paused job: dailyBackup (BACKUP)
+```
+
+### ▶️ Resume a paused scheduler
+Resume a job that was previously paused.
+```bash
+dbu:> resume-scheduler -j dailyBackup -g BACKUP
+```
+
+✅ Output:
+```
+Resumed job: dailyBackup (BACKUP)
+```
+
+### 🗑️ Delete a scheduler
+Completely remove a backup job from the scheduler.
+```bash
+dbu:> delete-scheduler -j dailyBackup -g BACKUP
+```
+
+✅ Output:
+```
+Deleted job: dailyBackup (BACKUP)
+```
+
+### ⏹️ Pause all schedulers
+Pause all running backup jobs at once.
+```bash
+dbu:> pause-all
+```
+
+✅ Output:
+```
+Paused all backup jobs.
+```
+
+### 🔁 Resume all schedulers
+Resume all paused backup jobs.
+```bash
+dbu:> resume-all
+```
+
+✅ Output:
+```
+Resumed all backup jobs.
+```
+
+ ---
+
