@@ -9,7 +9,7 @@ import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
-import dbu.services.scheduler.BackupJobScheduler;
+import dbu.services.scheduler.SchedulerService;
 import lombok.RequiredArgsConstructor;
 
 @ShellComponent
@@ -17,12 +17,12 @@ import lombok.RequiredArgsConstructor;
 public class SchedulerCommand {
 
     private static final Logger logger = LoggerFactory.getLogger(SchedulerCommand.class);
-    private final BackupJobScheduler backupJobScheduler;
+    private final SchedulerService backupJobScheduler;
 
     @ShellMethod(key = "list-schedulers", value = "Show all backup jobs with their status")
     public void listAllSchedulers() {
         logger.info("Executing command: list-schedulers");
-        List<BackupJobScheduler.JobInfo> jobs = backupJobScheduler.listAllJobs();
+        List<SchedulerService.JobInfo> jobs = backupJobScheduler.listAllJobs();
 
         if (jobs.isEmpty()) {
             System.out.println("No backup jobs found.");

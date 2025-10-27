@@ -27,9 +27,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Getter
-public class BackupJobScheduler {
+public class SchedulerService {
 
-    private static final Logger logger = LoggerFactory.getLogger(BackupJobScheduler.class);
+    private static final Logger logger = LoggerFactory.getLogger(SchedulerService.class);
     private final Scheduler scheduler;
 
     public void scheduleJob(BackupConfig backupConfig) throws SchedulerException {
@@ -39,7 +39,7 @@ public class BackupJobScheduler {
         JobDataMap jobDataMap = new JobDataMap();
         jobDataMap.put("backupConfig", backupConfig);
 
-        JobDetail jobDetail = JobBuilder.newJob(BackupJob.class)
+        JobDetail jobDetail = JobBuilder.newJob(SchedulerJob.class)
                 .withIdentity("backupJob_" + dbName,
                         backupConfig.getConnectionParams().getDatabaseType().name())
                 .setJobData(jobDataMap)

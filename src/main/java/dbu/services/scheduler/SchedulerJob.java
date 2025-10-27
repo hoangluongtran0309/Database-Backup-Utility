@@ -18,9 +18,9 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class BackupJob implements Job {
+public class SchedulerJob implements Job {
 
-    private static final Logger logger = LoggerFactory.getLogger(BackupJob.class);
+    private static final Logger logger = LoggerFactory.getLogger(SchedulerJob.class);
 
     private final Map<String, BackupService> backupExecutors;
 

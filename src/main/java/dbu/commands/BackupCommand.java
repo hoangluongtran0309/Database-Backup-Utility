@@ -16,7 +16,7 @@ import dbu.exceptions.BackupExecutionException;
 import dbu.models.BackupConfig;
 import dbu.models.ConnectionParams;
 import dbu.services.backup.BackupService;
-import dbu.services.scheduler.BackupJobScheduler;
+import dbu.services.scheduler.SchedulerService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class BackupCommand {
 
     private final Map<String, BackupService> backupExecutors;
 
-    private final BackupJobScheduler backupJobScheduler;
+    private final SchedulerService backupJobScheduler;
 
     @ShellMethod(key = "backup", value = "Backup the database")
     public void backup(
